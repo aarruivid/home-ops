@@ -298,11 +298,22 @@ function navigate() {
     updatePendingBadge();
 }
 
+let _pendingBadgeCache = { ts: 0, count: null };
 async function updatePendingBadge() {
+    const now = Date.now();
+    if (_pendingBadgeCache.count !== null && now - _pendingBadgeCache.ts < 30000) {
+        const badge = document.getElementById('pending-badge');
+        if (badge) {
+            badge.textContent = _pendingBadgeCache.count;
+            badge.style.display = _pendingBadgeCache.count > 0 ? '' : 'none';
+        }
+        return;
+    }
     try {
         const data = await api.pendingExpenses();
         const items = data.expenses || [];
         const count = items.length;
+        _pendingBadgeCache = { ts: now, count };
         const badge = document.getElementById('pending-badge');
         if (badge) {
             badge.textContent = count;
@@ -638,9 +649,8 @@ async function submitModalAdd() {
 async function home() {
     setLoading();
     try {
-        const [data, budgetsData, compareData, recentData] = await Promise.all([
+        const [data, compareData, recentData] = await Promise.all([
             api.overview(),
-            api.budgets(),
             api.compare().catch(() => null),
             api.expenses({ status: 'confirmed', per_page: 10 }).catch(() => ({ expenses: [] })),
         ]);
@@ -1392,6 +1402,7 @@ async function confirmItem(id) {
         await api.confirmExpense(id);
         toast('Expense confirmed');
         pendientes();
+        _pendingBadgeCache = { ts: 0, count: null };
         updatePendingBadge();
     } catch (err) {
         toast('Error: ' + err.message, 'error');
@@ -1406,6 +1417,7 @@ async function rejectItem(id) {
         await api.deleteExpense(id);
         toast('Expense deleted');
         pendientes();
+        _pendingBadgeCache = { ts: 0, count: null };
         updatePendingBadge();
     } catch (err) {
         toast('Error: ' + err.message, 'error');
