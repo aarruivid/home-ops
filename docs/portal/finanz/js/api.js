@@ -75,6 +75,10 @@ const api = {
         const qs = new URLSearchParams(params || {}).toString();
         return apiFetch(`/api/groceries/budget${qs ? '?' + qs : ''}`);
     },
+    categoryWeekly: (categoryId, params) => {
+        const qs = new URLSearchParams(params || {}).toString();
+        return apiFetch(`/api/category/${categoryId}/weekly${qs ? '?' + qs : ''}`);
+    },
 
     // Empresa
     empresa: (params) => {

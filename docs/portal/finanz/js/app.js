@@ -276,7 +276,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Router ──────────────────────────────────────────────────────
-const routes = { home, groceries, categorias, empresa, pendientes, presupuestos, historial, analytics };
+const routes = { home, groceries: () => { location.hash = 'category/1'; }, categorias, empresa, pendientes, presupuestos, historial, analytics };
 
 function navigateTo(view) {
     location.hash = view;
@@ -284,12 +284,23 @@ function navigateTo(view) {
 
 function navigate() {
     const hash = location.hash.slice(1) || 'home';
-    const viewFn = routes[hash];
+    let viewFn = routes[hash];
+
+    // Parameterized: #category/{id}
+    if (!viewFn && hash.startsWith('category/')) {
+        const catId = parseInt(hash.split('/')[1]);
+        if (catId) viewFn = () => categoryDetail(catId);
+    }
 
     destroyAllCharts();
 
+    // Nav highlighting: category/1 highlights groceries, category/N highlights categorias
+    let activeNav = hash;
+    if (hash.startsWith('category/')) {
+        activeNav = hash === 'category/1' ? 'groceries' : 'categorias';
+    }
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.view === hash);
+        item.classList.toggle('active', item.dataset.view === activeNav);
     });
 
     if (viewFn) viewFn();
@@ -1029,7 +1040,7 @@ function grocNextMonth() {
 }
 
 
-// ── View: Categorias ────────────────────────────────────────────
+// ── View: Categorias (Navigation Hub) ───────────────────────────
 let catState = { year: new Date().getFullYear(), month: new Date().getMonth() + 1, personFilter: 'all' };
 
 async function categorias() {
@@ -1045,7 +1056,7 @@ async function categorias() {
             api.expenses({ date_from: dateFrom, date_to: dateTo, status: 'confirmed', per_page: 500 }),
         ]);
 
-        const categories = summaryData.by_category || [];
+        const summaryCategories = summaryData.by_category || [];
         const allExpenses = expData.expenses || [];
         const monthLabel = `${monthNames[catState.month - 1]} ${catState.year}`;
 
@@ -1054,34 +1065,17 @@ async function categorias() {
             filteredExpenses = allExpenses.filter(e => e.user_id === parseInt(catState.personFilter));
         }
 
-        const catsHtml = categories.filter(c => c.total > 0).map((cat, i) => {
-            const catExpenses = filteredExpenses.filter(e => e.category_id === cat.category_id);
+        // Build cards for ALL categories (including those with 0 expenses)
+        const allCats = appState.categories || [];
+        const catsHtml = allCats.map((cat, i) => {
+            const summaryCat = summaryCategories.find(sc => sc.category_id === cat.id);
+            const catExpenses = filteredExpenses.filter(e => e.category_id === cat.id);
             const catTotal = catExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-
-            const tableRows = catExpenses.map(e => {
-                const uname = getShortName(e.user_id);
-                return `<tr class="clickable" onclick="openEditExpense(${e.id})">
-                    <td>${fmtDateShort(e.date)}</td>
-                    <td>${esc(e.description || '-')}</td>
-                    <td class="mono text-right">${fmt(e.amount)}</td>
-                    <td>${esc(uname)}</td>
-                </tr>`;
-            }).join('');
-
-            const innerHtml = catExpenses.length > 0 ? `
-                <table class="tbl">
-                    <thead><tr>
-                        <th class="sortable" onclick="sortCatTable(this, 0)">Date</th>
-                        <th class="sortable" onclick="sortCatTable(this, 1)">Description</th>
-                        <th class="sortable text-right" onclick="sortCatTable(this, 2)">Amount</th>
-                        <th class="sortable" onclick="sortCatTable(this, 3)">Person</th>
-                    </tr></thead>
-                    <tbody>${tableRows}</tbody>
-                </table>` : '';
+            const isEmpty = catExpenses.length === 0;
 
             return `
-            <div class="accordion-item" style="margin-bottom:6px">
-                <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+            <div class="accordion-item" style="margin-bottom:6px;cursor:pointer;${isEmpty ? 'opacity:0.5' : ''}" onclick="location.hash='category/${cat.id}'">
+                <div class="accordion-header" style="cursor:pointer">
                     <div class="cat-icon">
                         <span class="category-dot" style="background:${getCatColor(i)}"></span>
                         <span class="cat-name">${esc(cat.icon || '')} ${esc(cat.name)}</span>
@@ -1089,12 +1083,7 @@ async function categorias() {
                     <div class="accordion-right">
                         <span class="badge-muted badge" style="margin-right:8px">${catExpenses.length}</span>
                         <span class="accordion-total mono">${fmt(catTotal)}</span>
-                        <span class="accordion-chevron">${icons.chevronDown}</span>
-                    </div>
-                </div>
-                <div class="accordion-body">
-                    <div class="accordion-content">
-                        ${innerHtml || '<p class="text-muted text-center mt-8">No expenses</p>'}
+                        <span class="accordion-chevron">${icons.chevronRight}</span>
                     </div>
                 </div>
             </div>`;
@@ -1129,7 +1118,7 @@ async function categorias() {
                 </div>
 
                 <div class="accordion">
-                    ${catsHtml || '<div class="empty-state mt-24">' + icons.empty + '<p>No categories for this month</p></div>'}
+                    ${catsHtml || '<div class="empty-state mt-24">' + icons.empty + '<p>No categories</p></div>'}
                 </div>
             </div>`;
     } catch (err) {
@@ -1142,27 +1131,6 @@ function setCatPersonFilter(val) {
     categorias();
 }
 
-function sortCatTable(th, colIdx) {
-    const table = th.closest('table');
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const isAsc = th.classList.contains('asc');
-    table.querySelectorAll('th').forEach(h => h.classList.remove('asc', 'desc'));
-    th.classList.add(isAsc ? 'desc' : 'asc');
-    rows.sort((a, b) => {
-        let aVal = a.cells[colIdx].textContent.trim();
-        let bVal = b.cells[colIdx].textContent.trim();
-        if (colIdx === 2) {
-            aVal = parseFloat(aVal.replace(/[^\d.-]/g, '')) || 0;
-            bVal = parseFloat(bVal.replace(/[^\d.-]/g, '')) || 0;
-        }
-        if (aVal < bVal) return isAsc ? 1 : -1;
-        if (aVal > bVal) return isAsc ? -1 : 1;
-        return 0;
-    });
-    rows.forEach(r => tbody.appendChild(r));
-}
-
 function catPrevMonth() {
     catState.month--;
     if (catState.month < 1) { catState.month = 12; catState.year--; }
@@ -1172,6 +1140,284 @@ function catNextMonth() {
     catState.month++;
     if (catState.month > 12) { catState.month = 1; catState.year++; }
     categorias();
+}
+
+
+// ── View: Category Detail ───────────────────────────────────────
+let catDetailState = { year: new Date().getFullYear(), month: new Date().getMonth() + 1, personTab: 'all', viewMode: 'weekly' };
+
+function getCatIdFromHash() {
+    const hash = location.hash.slice(1);
+    if (hash.startsWith('category/')) return parseInt(hash.split('/')[1]);
+    return null;
+}
+
+async function categoryDetail(catId) {
+    setLoading();
+    try {
+        const data = await api.categoryWeekly(catId, { year: catDetailState.year, month: catDetailState.month });
+
+        const weeks = data.weeks || [];
+        const monthLabel = `${monthNames[catDetailState.month - 1]} ${catDetailState.year}`;
+
+        // Find category info
+        const catInfo = appState.categories.find(c => c.id === catId) || { name: `Category ${catId}`, icon: '' };
+
+        // Compute per-person totals from all week items
+        const allItems = weeks.flatMap(w => w.items || []);
+        const personTotals = {};
+        appState.users.forEach(u => { personTotals[u.id] = 0; });
+        allItems.forEach(i => { personTotals[i.user_id] = (personTotals[i.user_id] || 0) + (i.amount || 0); });
+        const monthTotal = allItems.reduce((s, i) => s + (i.amount || 0), 0);
+
+        // Filter items based on person tab
+        const filterPerson = catDetailState.personTab !== 'all' ? parseInt(catDetailState.personTab) : null;
+
+        // Budget from appState
+        const budgetRows = (appState.budgets || []).filter(b => b.category_id === catId);
+        let budgetAmount = 0, budgetSpent = 0;
+        if (budgetRows.length > 0) {
+            if (filterPerson) {
+                const userBudget = budgetRows.find(b => b.user_id === filterPerson);
+                budgetAmount = userBudget ? userBudget.monthly_limit : budgetRows.reduce((s, b) => s + b.monthly_limit, 0) / appState.users.length;
+                budgetSpent = personTotals[filterPerson] || 0;
+            } else {
+                budgetAmount = budgetRows.reduce((s, b) => s + b.monthly_limit, 0);
+                budgetSpent = monthTotal;
+            }
+        }
+        const hasBudget = budgetAmount > 0;
+        const pct = hasBudget ? Math.round((budgetSpent / budgetAmount) * 100) : 0;
+
+        // Tab bar
+        const tabBar = `
+        <div class="tab-bar">
+            <button class="tab-btn ${catDetailState.personTab === 'all' ? 'active' : ''}" onclick="setCatDetailTab('all')">Household</button>
+            ${appState.users.map(u => {
+                const short = u.name === 'Isabela' ? 'Bela' : u.name;
+                return `<button class="tab-btn ${catDetailState.personTab == u.id ? 'active' : ''}" onclick="setCatDetailTab('${u.id}')">${esc(short)}</button>`;
+            }).join('')}
+        </div>`;
+
+        // View mode toggle
+        const viewToggle = `
+        <div class="toggle-group" style="margin-bottom:16px">
+            <button class="toggle-btn ${catDetailState.viewMode === 'weekly' ? 'active' : ''}" onclick="setCatDetailViewMode('weekly')">Weekly</button>
+            <button class="toggle-btn ${catDetailState.viewMode === 'monthly' ? 'active' : ''}" onclick="setCatDetailViewMode('monthly')">Monthly</button>
+        </div>`;
+
+        // Budget bar
+        const budgetBarHtml = hasBudget ? `
+        <div class="card mb-20">
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span class="progress-label">${filterPerson ? getShortName(filterPerson) + ' Budget' : 'Monthly Budget'}</span>
+                    <span class="progress-value mono text-${budgetClass(pct)}">${fmt(budgetSpent)} / ${fmt(budgetAmount)} (${pct}%)</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill ${budgetClass(pct)}" style="width: ${Math.min(pct, 100)}%"></div>
+                </div>
+            </div>
+        </div>` : '';
+
+        let contentHtml = '';
+        if (catDetailState.viewMode === 'weekly') {
+            // Weekly accordion (same as groceries)
+            contentHtml = weeks.length > 0 ? weeks.map((week, idx) => {
+                let items = week.items || [];
+                if (filterPerson) items = items.filter(i => i.user_id === filterPerson);
+                const weekTotal = items.reduce((s, i) => s + (i.amount || 0), 0);
+                if (items.length === 0 && filterPerson) return '';
+                const label = week.label || `Week ${week.week || idx + 1}`;
+
+                let innerHtml = '';
+                if (filterPerson) {
+                    innerHtml = `<div class="expense-list">
+                        ${items.map(item => renderExpenseRow(item, { showCategory: false, showDate: true, editable: true })).join('')}
+                    </div>`;
+                } else {
+                    const byUser = {};
+                    appState.users.forEach(u => { byUser[u.id] = []; });
+                    items.forEach(i => {
+                        const uid = i.user_id || 1;
+                        if (!byUser[uid]) byUser[uid] = [];
+                        byUser[uid].push(i);
+                    });
+                    Object.entries(byUser).forEach(([uid, userItems]) => {
+                        if (userItems.length === 0) return;
+                        const uname = getShortName(parseInt(uid));
+                        const subtotal = userItems.reduce((s, i) => s + (i.amount || 0), 0);
+                        innerHtml += `
+                        <div style="margin-top:8px">
+                            <div class="flex items-center justify-between mb-8">
+                                <span class="field-label">${esc(uname)}</span>
+                                <span class="mono text-secondary" style="font-size:12px">${fmt(subtotal)}</span>
+                            </div>
+                            <div class="expense-list">
+                                ${userItems.map(item => renderExpenseRow(item, { showCategory: false, showDate: true, editable: true })).join('')}
+                            </div>
+                        </div>`;
+                    });
+                }
+
+                return `
+                <div class="accordion-item${idx === 0 ? ' open' : ''}">
+                    <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="accordion-title">${esc(label)}</span>
+                        <div class="accordion-right">
+                            <span class="accordion-total mono">${fmt(weekTotal)}</span>
+                            <span class="accordion-chevron">${icons.chevronDown}</span>
+                        </div>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="accordion-content">
+                            ${innerHtml || '<p class="text-muted text-center mt-8">No expenses this week</p>'}
+                        </div>
+                    </div>
+                </div>`;
+            }).filter(Boolean).join('') : '<div class="empty-state mt-24">' + icons.empty + '<p>No expenses this month</p></div>';
+        } else {
+            // Monthly flat view — all items grouped by user
+            let flatItems = allItems;
+            if (filterPerson) flatItems = flatItems.filter(i => i.user_id === filterPerson);
+
+            if (flatItems.length > 0) {
+                if (filterPerson) {
+                    contentHtml = `<div class="expense-list">
+                        ${flatItems.map(item => renderExpenseRow(item, { showCategory: false, showDate: true, editable: true })).join('')}
+                    </div>`;
+                } else {
+                    const byUser = {};
+                    appState.users.forEach(u => { byUser[u.id] = []; });
+                    flatItems.forEach(i => {
+                        const uid = i.user_id || 1;
+                        if (!byUser[uid]) byUser[uid] = [];
+                        byUser[uid].push(i);
+                    });
+                    Object.entries(byUser).forEach(([uid, userItems]) => {
+                        if (userItems.length === 0) return;
+                        const uname = getShortName(parseInt(uid));
+                        const subtotal = userItems.reduce((s, i) => s + (i.amount || 0), 0);
+                        contentHtml += `
+                        <div class="person-section">
+                            <div class="person-header">
+                                <span class="person-name">${esc(uname)}</span>
+                                <span class="person-total">${fmt(subtotal)}</span>
+                            </div>
+                            <div class="person-body">
+                                <div class="expense-list">
+                                    ${userItems.map(item => renderExpenseRow(item, { showCategory: false, showDate: true, editable: true })).join('')}
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+            } else {
+                contentHtml = '<div class="empty-state mt-24">' + icons.empty + '<p>No expenses this month</p></div>';
+            }
+        }
+
+        // Weekly bar chart (only in weekly mode)
+        const weeklyBarHtml = catDetailState.viewMode === 'weekly' && weeks.length > 0 ? `
+        <div class="card mb-20">
+            <div class="section-title">Weekly Totals</div>
+            <div class="chart-container" style="height:150px">
+                <canvas id="catdetail-weekly-bar"></canvas>
+            </div>
+        </div>` : '';
+
+        document.getElementById('app').innerHTML = `
+            <div class="view-enter">
+                <div style="margin-bottom:12px">
+                    <a href="#categorias" style="color:var(--muted);text-decoration:none;font-size:13px;display:inline-flex;align-items:center;gap:4px">
+                        ${icons.chevronLeft} Categories
+                    </a>
+                </div>
+
+                <div class="view-header">
+                    <h1>${esc(catInfo.icon || '')} ${esc(catInfo.name)}</h1>
+                    <p>${monthLabel}</p>
+                </div>
+
+                ${renderQuickAdd({ category_id: catId })}
+
+                <div class="filters">
+                    <div class="month-selector">
+                        <button class="month-nav-btn" onclick="catDetailPrevMonth()">${icons.chevronLeft}</button>
+                        <span class="month-label">${monthLabel}</span>
+                        <button class="month-nav-btn" onclick="catDetailNextMonth()">${icons.chevronRight}</button>
+                    </div>
+                </div>
+
+                ${tabBar}
+                ${budgetBarHtml}
+                ${viewToggle}
+
+                ${catDetailState.viewMode === 'weekly' ? `<div class="accordion">${contentHtml}</div>` : contentHtml}
+
+                ${weeklyBarHtml}
+            </div>`;
+
+        // Render weekly bar chart
+        if (catDetailState.viewMode === 'weekly' && weeks.length > 0) {
+            setTimeout(() => {
+                const weekLabels = weeks.map(w => w.label || `Week ${w.week}`);
+                let weekData;
+                if (filterPerson) {
+                    weekData = weeks.map(w => (w.items || []).filter(i => i.user_id === filterPerson).reduce((s, i) => s + (i.amount || 0), 0));
+                } else {
+                    weekData = weeks.map(w => w.total || 0);
+                }
+                const canvas = document.getElementById('catdetail-weekly-bar');
+                if (!canvas) return;
+                const c = getChartColors();
+                destroyChart('catdetail-weekly-bar');
+                appState.charts['catdetail-weekly-bar'] = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: weekLabels,
+                        datasets: [{ data: weekData, backgroundColor: 'var(--accent)', borderRadius: 4, barThickness: 20 }],
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) } } },
+                        scales: {
+                            x: { ticks: { color: c.muted }, grid: { display: false } },
+                            y: { ticks: { color: c.muted, callback: v => fmt(v) }, grid: { color: c.border }, beginAtZero: true },
+                        },
+                    },
+                });
+            }, 50);
+        }
+    } catch (err) {
+        showError('Could not load category: ' + err.message);
+    }
+}
+
+function setCatDetailTab(val) {
+    catDetailState.personTab = val;
+    const catId = getCatIdFromHash();
+    if (catId) categoryDetail(catId);
+}
+
+function setCatDetailViewMode(mode) {
+    catDetailState.viewMode = mode;
+    const catId = getCatIdFromHash();
+    if (catId) categoryDetail(catId);
+}
+
+function catDetailPrevMonth() {
+    catDetailState.month--;
+    if (catDetailState.month < 1) { catDetailState.month = 12; catDetailState.year--; }
+    const catId = getCatIdFromHash();
+    if (catId) categoryDetail(catId);
+}
+
+function catDetailNextMonth() {
+    catDetailState.month++;
+    if (catDetailState.month > 12) { catDetailState.month = 1; catDetailState.year++; }
+    const catId = getCatIdFromHash();
+    if (catId) categoryDetail(catId);
 }
 
 // ── Category Manager Modal ──────────────────────────────────────
