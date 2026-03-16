@@ -66,28 +66,14 @@ input, select, textarea { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ── Portal Home Button ────────────────────────────────────────── */
-.portal-home-btn {
-  position: fixed;
-  top: 0; left: 0;
-  z-index: 9999;
-  width: 44px; height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: transparent;
-  background: transparent;
-  text-decoration: none;
-  border-bottom-right-radius: 12px;
-  transition: all 0.25s ease;
-  cursor: default;
+/* ── Back Link ─────────────────────────────────────────────────── */
+.back-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--muted); text-decoration: none;
+  margin-bottom: 10px; transition: color var(--transition);
 }
-.portal-home-btn:hover {
-  color: #fff;
-  background: rgba(79, 70, 229, 0.85);
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.4);
-  cursor: pointer;
-}
+.back-link:hover { color: var(--accent); }
+.back-link svg { width: 14px; height: 14px; }
 
 /* ── Layout ────────────────────────────────────────────────────── */
 .layout { display: flex; min-height: 100vh; }
