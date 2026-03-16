@@ -84,5 +84,14 @@ const api = {
 
     // Summaries
     monthlySummary: (y, m) => apiFetch(`/api/summary/monthly/${y}/${m}`),
-    compare: () => apiFetch('/api/summary/compare'),
+    compare: (params) => {
+        const qs = new URLSearchParams(params || {}).toString();
+        return apiFetch(`/api/summary/compare${qs ? '?' + qs : ''}`);
+    },
+
+    // Analytics
+    dailyTrend: (params) => {
+        const qs = new URLSearchParams(params || {}).toString();
+        return apiFetch(`/api/analytics/daily-trend${qs ? '?' + qs : ''}`);
+    },
 };
