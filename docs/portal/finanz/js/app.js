@@ -22,8 +22,8 @@ const fmtDateShort = (d) => {
 };
 
 const monthNames = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
 const categoryColors = [
@@ -44,7 +44,7 @@ function setLoading() {
     document.getElementById('app').innerHTML = `
         <div class="loading-state">
             <div class="spinner"></div>
-            <p>Cargando...</p>
+            <p>Loading...</p>
         </div>`;
 }
 
@@ -235,7 +235,7 @@ function renderPersonSections(expenses, options = {}) {
             <div class="person-body">
                 ${sec.items.length > 0 ? `<div class="expense-list">
                     ${sec.items.map(e => renderExpenseRow(e, { showCategory, showDate, editable })).join('')}
-                </div>` : '<p class="text-muted text-center mt-8" style="padding:12px">Sin gastos</p>'}
+                </div>` : '<p class="text-muted text-center mt-8" style="padding:12px">No expenses</p>'}
             </div>
         </div>`;
     });
@@ -243,12 +243,12 @@ function renderPersonSections(expenses, options = {}) {
     if (sections.filter(s => s.items.length > 0).length > 1) {
         html += `
         <div class="combined-total">
-            <span class="label">Total Combinado</span>
+            <span class="label">Combined Total</span>
             <span class="amount">${fmt(grandTotal)}</span>
         </div>`;
     }
 
-    return html || '<div class="empty-state mt-24">' + icons.empty + '<p>Sin gastos</p></div>';
+    return html || '<div class="empty-state mt-24">' + icons.empty + '<p>No expenses</p></div>';
 }
 
 function renderExpenseRow(e, options = {}) {
@@ -265,7 +265,7 @@ function renderExpenseRow(e, options = {}) {
         </div>
         <span class="expense-amount mono">${fmt(e.amount)}</span>
         ${editable ? `<div class="expense-actions">
-            <button class="btn-icon btn-ghost" onclick="event.stopPropagation();deleteExpenseConfirm(${e.id})" title="Eliminar">${icons.trash}</button>
+            <button class="btn-icon btn-ghost" onclick="event.stopPropagation();deleteExpenseConfirm(${e.id})" title="Delete">${icons.trash}</button>
         </div>` : ''}
     </div>`;
 }
@@ -285,27 +285,27 @@ function renderQuickAdd(defaults = {}) {
     return `
     <form class="quick-add" onsubmit="submitQuickAdd(event)">
         <div class="input-group amount">
-            <label class="field-label">Monto</label>
+            <label class="field-label">Amount</label>
             <input type="number" step="0.01" min="0.01" class="field-input mono" id="qa-amount" required placeholder="0.00">
         </div>
         <div class="input-group desc">
-            <label class="field-label">Descripcion</label>
-            <input type="text" class="field-input" id="qa-desc" placeholder="Descripcion" required>
+            <label class="field-label">Description</label>
+            <input type="text" class="field-input" id="qa-desc" placeholder="Description" required>
         </div>
         <div class="input-group">
-            <label class="field-label">Categoria</label>
+            <label class="field-label">Category</label>
             <select class="field-input" id="qa-cat">${catOptions}</select>
         </div>
         <div class="input-group">
-            <label class="field-label">Persona</label>
+            <label class="field-label">Person</label>
             <div class="toggle-group" id="qa-user-toggle">${userToggles}</div>
             <input type="hidden" id="qa-user" value="${defaults.user_id || 1}">
         </div>
         <div class="input-group">
-            <label class="field-label">Fecha</label>
+            <label class="field-label">Date</label>
             <input type="date" class="field-input" id="qa-date" value="${defaults.date || todayISO()}">
         </div>
-        <button type="submit" class="btn btn-primary">${icons.plus} Agregar</button>
+        <button type="submit" class="btn btn-primary">${icons.plus} Add</button>
     </form>`;
 }
 
@@ -324,12 +324,12 @@ async function submitQuickAdd(e) {
     const user_id = parseInt(document.getElementById('qa-user').value);
     const date = document.getElementById('qa-date').value;
 
-    if (!amount || amount <= 0) { toast('Monto invalido', 'error'); return; }
-    if (!description) { toast('Descripcion requerida', 'error'); return; }
+    if (!amount || amount <= 0) { toast('Invalid amount', 'error'); return; }
+    if (!description) { toast('Description required', 'error'); return; }
 
     try {
         await api.createExpense({ amount, description, category_id, user_id, date, status: 'confirmed' });
-        toast('Gasto agregado');
+        toast('Expense added');
         navigate(); // refresh current view
     } catch (err) {
         toast('Error: ' + err.message, 'error');
@@ -346,7 +346,7 @@ async function openEditExpense(expenseId) {
         const all = await api.expenses({ per_page: 500 });
         expense = (all.expenses || []).find(e => e.id === expenseId);
     } catch { /* fallback */ }
-    if (!expense) { toast('Gasto no encontrado', 'error'); return; }
+    if (!expense) { toast('Expense not found', 'error'); return; }
 
     const catOptions = appState.categories.map(c =>
         `<option value="${c.id}" ${c.id == expense.category_id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`
@@ -359,41 +359,41 @@ async function openEditExpense(expenseId) {
 
     const body = `
         <div class="input-group">
-            <label class="field-label">Monto</label>
+            <label class="field-label">Amount</label>
             <input type="number" step="0.01" class="field-input mono" id="edit-amount" value="${expense.amount}">
         </div>
         <div class="input-group">
-            <label class="field-label">Descripcion</label>
+            <label class="field-label">Description</label>
             <input type="text" class="field-input" id="edit-desc" value="${esc(expense.description || '')}">
         </div>
         <div class="input-group">
-            <label class="field-label">Categoria</label>
+            <label class="field-label">Category</label>
             <select class="field-input" id="edit-cat">${catOptions}</select>
         </div>
         <div class="input-group">
-            <label class="field-label">Persona</label>
+            <label class="field-label">Person</label>
             <div class="toggle-group" id="edit-user-toggle">${userToggles}</div>
             <input type="hidden" id="edit-user" value="${expense.user_id}">
         </div>
         <div class="input-group">
-            <label class="field-label">Fecha</label>
+            <label class="field-label">Date</label>
             <input type="date" class="field-input" id="edit-date" value="${expense.date}">
         </div>
         <div class="input-group">
-            <label class="field-label">Estado</label>
+            <label class="field-label">Status</label>
             <select class="field-input" id="edit-status">
-                <option value="confirmed" ${expense.status === 'confirmed' ? 'selected' : ''}>Confirmado</option>
-                <option value="pending" ${expense.status === 'pending' ? 'selected' : ''}>Pendiente</option>
+                <option value="confirmed" ${expense.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="pending" ${expense.status === 'pending' ? 'selected' : ''}>Pending</option>
             </select>
         </div>`;
 
     const footer = `
-        <button class="btn btn-danger" onclick="deleteExpenseConfirm(${expense.id})">Eliminar</button>
+        <button class="btn btn-danger" onclick="deleteExpenseConfirm(${expense.id})">Delete</button>
         <div style="flex:1"></div>
-        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveEditExpense(${expense.id})">Guardar</button>`;
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditExpense(${expense.id})">Save</button>`;
 
-    openModal('Editar Gasto', body, footer);
+    openModal('Edit Expense', body, footer);
 }
 
 function selectEditUser(userId) {
@@ -415,7 +415,7 @@ async function saveEditExpense(id) {
 
     try {
         await api.updateExpense(id, data);
-        toast('Gasto actualizado');
+        toast('Expense updated');
         closeModal();
         navigate();
     } catch (err) {
@@ -425,15 +425,15 @@ async function saveEditExpense(id) {
 
 async function deleteExpenseConfirm(id) {
     closeModal();
-    openModal('Eliminar Gasto', '<p>Seguro que quieres eliminar este gasto?</p>',
-        `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-         <button class="btn btn-danger" onclick="doDeleteExpense(${id})">Eliminar</button>`);
+    openModal('Delete Expense', '<p>Are you sure you want to delete this expense?</p>',
+        `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+         <button class="btn btn-danger" onclick="doDeleteExpense(${id})">Delete</button>`);
 }
 
 async function doDeleteExpense(id) {
     try {
         await api.deleteExpense(id);
-        toast('Gasto eliminado');
+        toast('Expense deleted');
         closeModal();
         navigate();
     } catch (err) {
@@ -454,32 +454,32 @@ function openQuickAddModal() {
 
     const body = `
         <div class="input-group">
-            <label class="field-label">Monto</label>
+            <label class="field-label">Amount</label>
             <input type="number" step="0.01" min="0.01" class="field-input mono" id="modal-amount" required placeholder="0.00">
         </div>
         <div class="input-group">
-            <label class="field-label">Descripcion</label>
-            <input type="text" class="field-input" id="modal-desc" required placeholder="Descripcion">
+            <label class="field-label">Description</label>
+            <input type="text" class="field-input" id="modal-desc" required placeholder="Description">
         </div>
         <div class="input-group">
-            <label class="field-label">Categoria</label>
+            <label class="field-label">Category</label>
             <select class="field-input" id="modal-cat">${catOptions}</select>
         </div>
         <div class="input-group">
-            <label class="field-label">Persona</label>
+            <label class="field-label">Person</label>
             <div class="toggle-group" id="modal-user-toggle">${userToggles}</div>
             <input type="hidden" id="modal-user" value="1">
         </div>
         <div class="input-group">
-            <label class="field-label">Fecha</label>
+            <label class="field-label">Date</label>
             <input type="date" class="field-input" id="modal-date" value="${todayISO()}">
         </div>`;
 
     const footer = `
-        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="submitModalAdd()">Agregar</button>`;
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitModalAdd()">Add</button>`;
 
-    openModal('Nuevo Gasto', body, footer);
+    openModal('New Expense', body, footer);
     setTimeout(() => document.getElementById('modal-amount')?.focus(), 100);
 }
 
@@ -497,12 +497,12 @@ async function submitModalAdd() {
     const user_id = parseInt(document.getElementById('modal-user').value);
     const date = document.getElementById('modal-date').value;
 
-    if (!amount || amount <= 0) { toast('Monto invalido', 'error'); return; }
-    if (!description) { toast('Descripcion requerida', 'error'); return; }
+    if (!amount || amount <= 0) { toast('Invalid amount', 'error'); return; }
+    if (!description) { toast('Description required', 'error'); return; }
 
     try {
         await api.createExpense({ amount, description, category_id, user_id, date, status: 'confirmed' });
-        toast('Gasto agregado');
+        toast('Expense added');
         closeModal();
         navigate();
     } catch (err) {
@@ -552,25 +552,25 @@ async function home() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
             <div class="stat-body">
-                <div class="stat-label">Total Mes</div>
+                <div class="stat-label">Monthly Total</div>
                 <div class="stat-value mono">${fmt(data.grand_total)}</div>
                 <div class="stat-sub">${monthLabel}</div>
             </div>
         </div>`;
 
-        // Budget progress bars
+        // Budget progress bars (per-person)
         let budgetBars = '';
-        if (budgets.length > 0) {
-            budgetBars = '<div class="card mb-20"><div class="section-title">Presupuestos</div>';
-            budgets.forEach(b => {
-                const catExpense = categories.find(c => c.category_id === b.category_id);
-                const spent = catExpense ? catExpense.total : 0;
-                const pct = b.monthly_limit > 0 ? Math.round((spent / b.monthly_limit) * 100) : 0;
+        const budgetStatus = data.budget_status || [];
+        if (budgetStatus.length > 0) {
+            budgetBars = '<div class="card mb-20"><div class="section-title">Budgets</div>';
+            budgetStatus.forEach(b => {
+                const pct = b.monthly_limit > 0 ? Math.round((b.current_total / b.monthly_limit) * 100) : 0;
+                const label = `${esc(b.user_name || '')} — ${esc(b.category || '')}`;
                 budgetBars += `
                 <div class="progress-container">
                     <div class="progress-header">
-                        <span class="progress-label">${esc(b.category_icon || '')} ${esc(b.category_name)}</span>
-                        <span class="progress-value mono text-${budgetClass(pct)}">${fmt(spent)} / ${fmt(b.monthly_limit)} (${pct}%)</span>
+                        <span class="progress-label">${label}</span>
+                        <span class="progress-value mono text-${budgetClass(pct)}">${fmt(b.current_total)} / ${fmt(b.monthly_limit)} (${pct}%)</span>
                     </div>
                     <div class="progress-track">
                         <div class="progress-fill ${budgetClass(pct)}" style="width: ${Math.min(pct, 100)}%"></div>
@@ -585,7 +585,7 @@ async function home() {
         if (categories.length > 0) {
             catBreakdown = `
             <div class="section">
-                <div class="section-title">Desglose por Categoria</div>
+                <div class="section-title">Breakdown by Category</div>
                 <div class="category-list">
                     ${categories.map((cat, i) => `
                         <div class="category-row" onclick="location.hash='categorias'">
@@ -603,7 +603,7 @@ async function home() {
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Resumen del Mes</h1>
+                    <h1>Monthly Summary</h1>
                     <p>${monthLabel}</p>
                 </div>
 
@@ -618,7 +618,7 @@ async function home() {
                 ${catBreakdown}
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar el resumen: ' + err.message);
+        showError('Could not load summary: ' + err.message);
     }
 }
 
@@ -640,7 +640,7 @@ async function groceries() {
         const weeksHtml = weeks.length > 0 ? weeks.map((week, idx) => {
             const items = week.items || [];
             const weekTotal = week.total ?? items.reduce((s, i) => s + (i.amount || 0), 0);
-            const label = week.label || `Semana ${week.week || idx + 1}`;
+            const label = week.label || `Week ${week.week || idx + 1}`;
 
             // Split items by user
             const byUser = {};
@@ -679,17 +679,17 @@ async function groceries() {
                 </div>
                 <div class="accordion-body">
                     <div class="accordion-content">
-                        ${innerHtml || '<p class="text-muted text-center mt-8">Sin compras esta semana</p>'}
+                        ${innerHtml || '<p class="text-muted text-center mt-8">No purchases this week</p>'}
                     </div>
                 </div>
             </div>`;
-        }).join('') : '<div class="empty-state mt-24">' + icons.empty + '<p>No hay datos de supermercado</p></div>';
+        }).join('') : '<div class="empty-state mt-24">' + icons.empty + '<p>No grocery data</p></div>';
 
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Supermercado</h1>
-                    <p>Desglose semanal</p>
+                    <h1>Groceries</h1>
+                    <p>Weekly breakdown</p>
                 </div>
 
                 ${renderQuickAdd({ category_id: 1 })}
@@ -697,7 +697,7 @@ async function groceries() {
                 <div class="card mb-20">
                     <div class="progress-container">
                         <div class="progress-header">
-                            <span class="progress-label">Presupuesto Mensual</span>
+                            <span class="progress-label">Monthly Budget</span>
                             <span class="progress-value mono text-${budgetClass(pct)}">${fmt(spent)} / ${fmt(budget)} (${pct}%)</span>
                         </div>
                         <div class="progress-track">
@@ -709,13 +709,13 @@ async function groceries() {
                 <div class="accordion">${weeksHtml}</div>
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar supermercado: ' + err.message);
+        showError('Could not load groceries: ' + err.message);
     }
 }
 
 
 // ── View: Categorias ────────────────────────────────────────────
-let catState = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+let catState = { year: new Date().getFullYear(), month: new Date().getMonth() + 1, personFilter: 'all' };
 
 async function categorias() {
     setLoading();
@@ -735,34 +735,37 @@ async function categorias() {
         const allExpenses = expData.expenses || [];
         const monthLabel = `${monthNames[catState.month - 1]} ${catState.year}`;
 
+        // Person filter
+        let filteredExpenses = allExpenses;
+        if (catState.personFilter !== 'all') {
+            filteredExpenses = allExpenses.filter(e => e.user_id === parseInt(catState.personFilter));
+        }
+
         const catsHtml = categories.filter(c => c.total > 0).map((cat, i) => {
-            const catExpenses = allExpenses.filter(e => e.category_id === cat.category_id);
+            const catExpenses = filteredExpenses.filter(e => e.category_id === cat.category_id);
+            const catTotal = catExpenses.reduce((s, e) => s + (e.amount || 0), 0);
 
-            // Split by user inside category
-            const byUser = {};
-            appState.users.forEach(u => { byUser[u.id] = []; });
-            catExpenses.forEach(e => {
-                const uid = e.user_id || 1;
-                if (!byUser[uid]) byUser[uid] = [];
-                byUser[uid].push(e);
-            });
+            // Build table rows from all expenses in this category
+            let tableRows = catExpenses.map(e => {
+                const uname = getShortName(e.user_id);
+                return `<tr class="clickable" onclick="openEditExpense(${e.id})">
+                    <td>${fmtDateShort(e.date)}</td>
+                    <td>${esc(e.description || '-')}</td>
+                    <td class="mono text-right">${fmt(e.amount)}</td>
+                    <td>${esc(uname)}</td>
+                </tr>`;
+            }).join('');
 
-            let innerHtml = '';
-            Object.entries(byUser).forEach(([uid, items]) => {
-                if (items.length === 0) return;
-                const uname = getShortName(parseInt(uid));
-                const subtotal = items.reduce((s, e) => s + (e.amount || 0), 0);
-                innerHtml += `
-                <div style="margin-top:8px">
-                    <div class="flex items-center justify-between mb-8">
-                        <span class="field-label">${esc(uname)}</span>
-                        <span class="mono text-secondary" style="font-size:12px">${fmt(subtotal)}</span>
-                    </div>
-                    <div class="expense-list">
-                        ${items.map(e => renderExpenseRow(e, { showCategory: false, showDate: true, editable: true })).join('')}
-                    </div>
-                </div>`;
-            });
+            let innerHtml = catExpenses.length > 0 ? `
+                <table class="tbl">
+                    <thead><tr>
+                        <th class="sortable" onclick="sortCatTable(this, 0)">Date</th>
+                        <th class="sortable" onclick="sortCatTable(this, 1)">Description</th>
+                        <th class="sortable text-right" onclick="sortCatTable(this, 2)">Amount</th>
+                        <th class="sortable" onclick="sortCatTable(this, 3)">Person</th>
+                    </tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>` : '';
 
             return `
             <div class="accordion-item" style="margin-bottom:6px">
@@ -772,27 +775,36 @@ async function categorias() {
                         <span class="cat-name">${esc(cat.icon || '')} ${esc(cat.name)}</span>
                     </div>
                     <div class="accordion-right">
-                        <span class="badge-muted badge" style="margin-right:8px">${cat.count || catExpenses.length}</span>
-                        <span class="accordion-total mono">${fmt(cat.total)}</span>
+                        <span class="badge-muted badge" style="margin-right:8px">${catExpenses.length}</span>
+                        <span class="accordion-total mono">${fmt(catTotal)}</span>
                         <span class="accordion-chevron">${icons.chevronDown}</span>
                     </div>
                 </div>
                 <div class="accordion-body">
                     <div class="accordion-content">
-                        ${innerHtml || '<p class="text-muted text-center mt-8">Sin gastos</p>'}
+                        ${innerHtml || '<p class="text-muted text-center mt-8">No expenses</p>'}
                     </div>
                 </div>
             </div>`;
         }).join('');
 
+        const personFilterHtml = `
+            <div class="person-filter toggle-group">
+                <button class="toggle-btn ${catState.personFilter === 'all' ? 'active' : ''}" onclick="setCatPersonFilter('all')">All</button>
+                ${appState.users.map(u => {
+                    const short = u.name === 'Isabela' ? 'Bela' : u.name;
+                    return `<button class="toggle-btn ${catState.personFilter == u.id ? 'active' : ''}" onclick="setCatPersonFilter('${u.id}')">${esc(short)}</button>`;
+                }).join('')}
+            </div>`;
+
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header flex items-center justify-between">
                     <div>
-                        <h1>Categorias</h1>
-                        <p>Gastos por categoria</p>
+                        <h1>Categories</h1>
+                        <p>Expenses by category</p>
                     </div>
-                    <button class="btn btn-ghost btn-sm" onclick="openCategoryManager()">Gestionar Categorias</button>
+                    <button class="btn btn-ghost btn-sm" onclick="openCategoryManager()">Manage Categories</button>
                 </div>
 
                 <div class="filters">
@@ -801,15 +813,47 @@ async function categorias() {
                         <span class="month-label">${monthLabel}</span>
                         <button class="month-nav-btn" onclick="catNextMonth()">${icons.chevronRight}</button>
                     </div>
+                    ${personFilterHtml}
                 </div>
 
                 <div class="accordion">
-                    ${catsHtml || '<div class="empty-state mt-24">' + icons.empty + '<p>Sin categorias para este mes</p></div>'}
+                    ${catsHtml || '<div class="empty-state mt-24">' + icons.empty + '<p>No categories for this month</p></div>'}
                 </div>
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar categorias: ' + err.message);
+        showError('Could not load categories: ' + err.message);
     }
+}
+
+function setCatPersonFilter(val) {
+    catState.personFilter = val;
+    categorias();
+}
+
+function sortCatTable(th, colIdx) {
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const isAsc = th.classList.contains('asc');
+
+    // Clear sort indicators
+    table.querySelectorAll('th').forEach(h => h.classList.remove('asc', 'desc'));
+    th.classList.add(isAsc ? 'desc' : 'asc');
+
+    rows.sort((a, b) => {
+        let aVal = a.cells[colIdx].textContent.trim();
+        let bVal = b.cells[colIdx].textContent.trim();
+        // Amount column - parse numbers
+        if (colIdx === 2) {
+            aVal = parseFloat(aVal.replace(/[^\d.-]/g, '')) || 0;
+            bVal = parseFloat(bVal.replace(/[^\d.-]/g, '')) || 0;
+        }
+        if (aVal < bVal) return isAsc ? 1 : -1;
+        if (aVal > bVal) return isAsc ? -1 : 1;
+        return 0;
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
 }
 
 function catPrevMonth() {
@@ -840,21 +884,21 @@ function openCategoryManager() {
         </div>
         <div class="flex gap-8 mt-16">
             <input type="text" class="field-input" id="new-cat-icon" placeholder="Icon" style="width:60px" value="📌">
-            <input type="text" class="field-input" id="new-cat-name" placeholder="Nombre" style="flex:1">
-            <button class="btn btn-primary btn-sm" onclick="createNewCategory()">Crear</button>
+            <input type="text" class="field-input" id="new-cat-name" placeholder="Name" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="createNewCategory()">Create</button>
         </div>`;
-    openModal('Gestionar Categorias', body, '');
+    openModal('Manage Categories', body, '');
 }
 
 async function createNewCategory() {
     const name = document.getElementById('new-cat-name').value.trim();
     const icon = document.getElementById('new-cat-icon').value.trim();
-    if (!name) { toast('Nombre requerido', 'error'); return; }
+    if (!name) { toast('Name required', 'error'); return; }
     try {
         await api.createCategory({ name, icon: icon || '📌' });
         const catsData = await api.categories();
         appState.categories = catsData.categories || [];
-        toast('Categoria creada');
+        toast('Category created');
         closeModal();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
 }
@@ -867,34 +911,34 @@ function editCategoryPrompt(id, name, icon) {
             <input type="text" class="field-input" id="edit-cat-icon" value="${esc(icon)}" style="width:80px">
         </div>
         <div class="input-group">
-            <label class="field-label">Nombre</label>
+            <label class="field-label">Name</label>
             <input type="text" class="field-input" id="edit-cat-name" value="${esc(name)}">
         </div>`;
     const footer = `
-        <button class="btn btn-ghost" onclick="closeModal();openCategoryManager()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveCategory(${id})">Guardar</button>`;
-    openModal('Editar Categoria', body, footer);
+        <button class="btn btn-ghost" onclick="closeModal();openCategoryManager()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCategory(${id})">Save</button>`;
+    openModal('Edit Category', body, footer);
 }
 
 async function saveCategory(id) {
     const name = document.getElementById('edit-cat-name').value.trim();
     const icon = document.getElementById('edit-cat-icon').value.trim();
-    if (!name) { toast('Nombre requerido', 'error'); return; }
+    if (!name) { toast('Name required', 'error'); return; }
     try {
         await api.updateCategory(id, { name, icon });
         const catsData = await api.categories();
         appState.categories = catsData.categories || [];
-        toast('Categoria actualizada');
+        toast('Category updated');
         closeModal();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
 }
 
 async function deleteCategoryPrompt(id, name) {
     closeModal();
-    openModal('Eliminar Categoria',
-        `<p>Eliminar "${esc(name)}"? Solo se puede eliminar si no tiene gastos asociados.</p>`,
-        `<button class="btn btn-ghost" onclick="closeModal();openCategoryManager()">Cancelar</button>
-         <button class="btn btn-danger" onclick="doDeleteCategory(${id})">Eliminar</button>`);
+    openModal('Delete Category',
+        `<p>Delete "${esc(name)}"? Only possible if it has no associated expenses.</p>`,
+        `<button class="btn btn-ghost" onclick="closeModal();openCategoryManager()">Cancel</button>
+         <button class="btn btn-danger" onclick="doDeleteCategory(${id})">Delete</button>`);
 }
 
 async function doDeleteCategory(id) {
@@ -902,7 +946,7 @@ async function doDeleteCategory(id) {
         await api.deleteCategory(id);
         const catsData = await api.categories();
         appState.categories = catsData.categories || [];
-        toast('Categoria eliminada');
+        toast('Category deleted');
         closeModal();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
 }
@@ -922,8 +966,8 @@ async function empresa() {
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Empresa</h1>
-                    <p>Gastos de negocio (Aaron)</p>
+                    <h1>Business</h1>
+                    <p>Business expenses (Aaron)</p>
                 </div>
 
                 ${renderQuickAdd({ category_id: 10, user_id: 1 })}
@@ -941,25 +985,25 @@ async function empresa() {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
                     </div>
                     <div class="stat-body">
-                        <div class="stat-label">Total Empresa</div>
+                        <div class="stat-label">Business Total</div>
                         <div class="stat-value mono">${fmt(total)}</div>
                         <div class="stat-sub">${monthLabel}</div>
                     </div>
                 </div>
 
                 <div class="section">
-                    <div class="section-title">Gastos</div>
+                    <div class="section-title">Expenses</div>
                     <div class="expense-list">
                         ${expenses.length > 0 ? expenses.map(e => renderExpenseRow(e, { showCategory: false, showDate: true, editable: true })).join('') : `
                             <div class="empty-state mt-24">
                                 ${icons.empty}
-                                <p>Sin gastos de empresa este mes</p>
+                                <p>No business expenses this month</p>
                             </div>`}
                     </div>
                 </div>
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar empresa: ' + err.message);
+        showError('Could not load business: ' + err.message);
     }
 }
 
@@ -1004,15 +1048,15 @@ async function pendientes() {
                             <div class="pending-info">
                                 <div class="pending-desc">${esc(item.description || '-')}</div>
                                 <div class="pending-detail">
-                                    ${item.category_icon || ''} ${item.category_name ? esc(item.category_name) : 'Sin categoria'}
+                                    ${item.category_icon || ''} ${item.category_name ? esc(item.category_name) : 'No category'}
                                     ${item.date ? ' &middot; ' + fmtDateShort(item.date) : ''}
                                 </div>
                             </div>
                             <span class="pending-amount mono">${fmt(item.amount)}</span>
                             <div class="pending-actions">
                                 <button class="btn btn-ghost btn-sm" onclick="openEditExpense(${item.id})" title="Editar">${icons.edit}</button>
-                                <button class="btn btn-confirm btn-sm" onclick="confirmItem(${item.id})" title="Confirmar">
-                                    ${icons.check} Confirmar
+                                <button class="btn btn-confirm btn-sm" onclick="confirmItem(${item.id})" title="Confirm">
+                                    ${icons.check} Confirm
                                 </button>
                                 <button class="btn btn-reject btn-sm" onclick="rejectItem(${item.id})" title="Rechazar">
                                     ${icons.x}
@@ -1027,8 +1071,8 @@ async function pendientes() {
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Pendientes</h1>
-                    <p>${items.length} elemento${items.length !== 1 ? 's' : ''} por confirmar</p>
+                    <h1>Pending</h1>
+                    <p>${items.length} item${items.length !== 1 ? 's' : ''} to confirm</p>
                 </div>
 
                 ${sectionsHtml || `
@@ -1037,11 +1081,11 @@ async function pendientes() {
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
-                        <p>Todo confirmado</p>
+                        <p>All confirmed</p>
                     </div>`}
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar pendientes: ' + err.message);
+        showError('Could not load pending: ' + err.message);
     }
 }
 
@@ -1050,7 +1094,7 @@ async function confirmItem(id) {
     if (el) el.style.opacity = '0.5';
     try {
         await api.confirmExpense(id);
-        toast('Gasto confirmado');
+        toast('Expense confirmed');
         pendientes();
         updatePendingBadge();
     } catch (err) {
@@ -1064,7 +1108,7 @@ async function rejectItem(id) {
     if (el) el.style.opacity = '0.5';
     try {
         await api.deleteExpense(id);
-        toast('Gasto eliminado');
+        toast('Expense deleted');
         pendientes();
         updatePendingBadge();
     } catch (err) {
@@ -1085,69 +1129,94 @@ async function presupuestos() {
         const budgets = budgetsData.budgets || [];
         const cats = catsData.categories || [];
 
-        const budgetMap = {};
-        budgets.forEach(b => { budgetMap[b.category_id] = b; });
+        // Group budgets by category
+        const byCat = {};
+        budgets.forEach(b => {
+            if (!byCat[b.category_id]) byCat[b.category_id] = [];
+            byCat[b.category_id].push(b);
+        });
 
         const rows = cats.map(c => {
-            const b = budgetMap[c.id];
+            const catBudgets = byCat[c.id] || [];
+            const perUser = catBudgets.length > 0
+                ? catBudgets.map(b => `
+                    <div class="flex items-center justify-between" style="padding:6px 0 6px 28px">
+                        <span style="font-size:12px;color:var(--text-secondary)">${esc(b.user_name || 'Shared')}</span>
+                        <div class="flex items-center gap-12">
+                            <span class="mono text-accent" style="font-size:12px">${fmt(b.monthly_limit)}</span>
+                            <button class="btn btn-ghost btn-sm" onclick="editBudget(${c.id}, '${esc(c.name)}', ${b.monthly_limit}, ${b.user_id || 'null'})">${icons.edit}</button>
+                        </div>
+                    </div>`).join('')
+                : `<div style="padding:6px 0 6px 28px;font-size:12px;color:var(--muted)">No budget</div>`;
+
             return `
-            <div class="flex items-center justify-between" style="padding:12px 16px;border-bottom:1px solid var(--border)">
-                <div class="flex items-center gap-8">
-                    <span>${esc(c.icon || '')}</span>
-                    <span style="font-weight:500">${esc(c.name)}</span>
+            <div style="border-bottom:1px solid var(--border)">
+                <div class="flex items-center justify-between" style="padding:12px 16px">
+                    <div class="flex items-center gap-8">
+                        <span>${esc(c.icon || '')}</span>
+                        <span style="font-weight:500">${esc(c.name)}</span>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="addBudgetForCategory(${c.id}, '${esc(c.name)}')">${icons.plus}</button>
                 </div>
-                <div class="flex items-center gap-12">
-                    <span class="mono ${b ? 'text-accent' : 'text-muted'}" style="font-size:13px">
-                        ${b ? fmt(b.monthly_limit) : 'Sin presupuesto'}
-                    </span>
-                    <button class="btn btn-ghost btn-sm" onclick="editBudget(${c.id}, '${esc(c.name)}', ${b ? b.monthly_limit : 0})">
-                        ${b ? icons.edit : icons.plus}
-                    </button>
-                </div>
+                ${perUser}
             </div>`;
         }).join('');
 
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Presupuestos</h1>
-                    <p>Limites mensuales por categoria</p>
+                    <h1>Budgets</h1>
+                    <p>Monthly limits by category</p>
                 </div>
 
                 <div class="card">
-                    ${rows || '<p class="text-muted text-center" style="padding:20px">Sin categorias</p>'}
+                    ${rows || '<p class="text-muted text-center" style="padding:20px">No categories</p>'}
                 </div>
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar presupuestos: ' + err.message);
+        showError('Could not load budgets: ' + err.message);
     }
 }
 
-function editBudget(categoryId, categoryName, currentLimit) {
+function addBudgetForCategory(categoryId, categoryName) {
+    editBudget(categoryId, categoryName, 0, null);
+}
+
+function editBudget(categoryId, categoryName, currentLimit, userId) {
+    const userSelect = appState.users.map(u => {
+        const short = u.name === 'Isabela' ? 'Bela' : u.name;
+        return `<option value="${u.id}" ${u.id === userId ? 'selected' : ''}>${esc(short)}</option>`;
+    }).join('');
+
     const body = `
         <div class="input-group">
-            <label class="field-label">Categoria</label>
+            <label class="field-label">Category</label>
             <input type="text" class="field-input" value="${esc(categoryName)}" disabled>
         </div>
         <div class="input-group">
-            <label class="field-label">Limite Mensual</label>
+            <label class="field-label">Person</label>
+            <select class="field-input" id="budget-user">${userSelect}</select>
+        </div>
+        <div class="input-group">
+            <label class="field-label">Monthly Limit</label>
             <input type="number" step="0.01" class="field-input mono" id="budget-limit" value="${currentLimit || ''}" placeholder="0.00">
         </div>`;
     const footer = `
-        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveBudget(${categoryId})">Guardar</button>`;
-    openModal('Editar Presupuesto', body, footer);
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveBudget(${categoryId})">Save</button>`;
+    openModal('Edit Budget', body, footer);
     setTimeout(() => document.getElementById('budget-limit')?.focus(), 100);
 }
 
 async function saveBudget(categoryId) {
     const limit = parseFloat(document.getElementById('budget-limit').value);
-    if (!limit || limit <= 0) { toast('Limite invalido', 'error'); return; }
+    const userId = parseInt(document.getElementById('budget-user').value);
+    if (!limit || limit <= 0) { toast('Invalid limit', 'error'); return; }
     try {
-        await api.upsertBudget({ category_id: categoryId, monthly_limit: limit });
+        await api.upsertBudget({ category_id: categoryId, monthly_limit: limit, user_id: userId });
         const budgetsData = await api.budgets();
         appState.budgets = budgetsData.budgets || [];
-        toast('Presupuesto actualizado');
+        toast('Budget updated');
         closeModal();
         presupuestos();
     } catch (err) { toast('Error: ' + err.message, 'error'); }
@@ -1186,16 +1255,16 @@ async function historial() {
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
                 <div class="view-header">
-                    <h1>Historial</h1>
-                    <p>Todos los gastos confirmados</p>
+                    <h1>History</h1>
+                    <p>All confirmed expenses</p>
                 </div>
 
                 <div class="filters">
                     <select class="field-input" onchange="histFilter('category', this.value)" style="max-width:200px">
-                        <option value="">Todas las categorias</option>
+                        <option value="">All categories</option>
                         ${cats.map(c => `<option value="${c.id}" ${histState.category == c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}
                     </select>
-                    <input type="text" class="field-input" placeholder="Buscar..." value="${esc(histState.search)}"
+                    <input type="text" class="field-input" placeholder="Search..." value="${esc(histState.search)}"
                         oninput="histState.search=this.value;historial()" style="max-width:200px">
                 </div>
 
@@ -1209,7 +1278,7 @@ async function historial() {
                 </div>` : ''}
             </div>`;
     } catch (err) {
-        showError('No se pudo cargar historial: ' + err.message);
+        showError('Could not load history: ' + err.message);
     }
 }
 

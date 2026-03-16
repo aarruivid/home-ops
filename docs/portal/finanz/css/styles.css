@@ -724,6 +724,18 @@ select.field-input {
 .justify-between { justify-content: space-between; }
 .hidden { display: none !important; }
 
+/* ── Sortable Table ────────────────────────────────────────────── */
+.tbl .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.tbl .sortable:hover { color: var(--text); }
+.tbl .sortable::after { content: ' \2195'; font-size: 9px; opacity: 0.4; }
+.tbl .sortable.asc::after { content: ' \2191'; opacity: 0.8; }
+.tbl .sortable.desc::after { content: ' \2193'; opacity: 0.8; }
+.tbl td.clickable { cursor: pointer; }
+.tbl tr.clickable:hover td { background: var(--accent-bg); }
+
+/* ── Person Filter Toggle ──────────────────────────────────────── */
+.person-filter { display: flex; gap: 2px; margin-left: auto; }
+
 /* ── Responsive: Tablet ────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .main { padding: 24px 20px; }
