@@ -7,7 +7,16 @@ function _url(path) {
     return typeof portalApiUrl === 'function' ? portalApiUrl(path) : path;
 }
 
+function _checkConfigured() {
+    var base = localStorage.getItem('portal_api_base');
+    if (!base) {
+        throw new Error('API no configurada. Ve a la pagina del Portal y configura la URL del API en Settings.');
+    }
+}
+
 async function apiFetch(path, options = {}) {
+    _checkConfigured();
+
     const config = {
         headers: { 'Content-Type': 'application/json', ...options.headers },
         ...options,
