@@ -3,8 +3,6 @@
  * Fetch wrapper for all backend endpoints.
  */
 
-const API_BASE = '';
-
 async function apiFetch(path, options = {}) {
     const config = {
         headers: { 'Content-Type': 'application/json', ...options.headers },
@@ -14,7 +12,8 @@ async function apiFetch(path, options = {}) {
         delete config.headers['Content-Type'];
     }
 
-    const res = await fetch(`${API_BASE}${path}`, config);
+    const url = typeof window.portalApiUrl === 'function' ? window.portalApiUrl(path) : path;
+    const res = await fetch(url, config);
     if (!res.ok) {
         const text = await res.text().catch(() => '');
         throw new Error(`API ${res.status}: ${text || res.statusText}`);
