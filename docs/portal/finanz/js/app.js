@@ -1046,32 +1046,18 @@ let catState = { year: new Date().getFullYear(), month: new Date().getMonth() + 
 async function categorias() {
     setLoading();
     try {
-        const dateFrom = `${catState.year}-${String(catState.month).padStart(2, '0')}-01`;
-        const dateTo = catState.month === 12
-            ? `${catState.year + 1}-01-01`
-            : `${catState.year}-${String(catState.month + 1).padStart(2, '0')}-01`;
-
-        const [summaryData, expData] = await Promise.all([
-            api.monthlySummary(catState.year, catState.month),
-            api.expenses({ date_from: dateFrom, date_to: dateTo, status: 'confirmed', per_page: 500 }),
-        ]);
+        const summaryData = await api.monthlySummary(catState.year, catState.month);
 
         const summaryCategories = summaryData.by_category || [];
-        const allExpenses = expData.expenses || [];
         const monthLabel = `${monthNames[catState.month - 1]} ${catState.year}`;
-
-        let filteredExpenses = allExpenses;
-        if (catState.personFilter !== 'all') {
-            filteredExpenses = allExpenses.filter(e => e.user_id === parseInt(catState.personFilter));
-        }
 
         // Build cards for ALL categories (including those with 0 expenses)
         const allCats = appState.categories || [];
         const catsHtml = allCats.map((cat, i) => {
             const summaryCat = summaryCategories.find(sc => sc.category_id === cat.id);
-            const catExpenses = filteredExpenses.filter(e => e.category_id === cat.id);
-            const catTotal = catExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-            const isEmpty = catExpenses.length === 0;
+            const catTotal = summaryCat ? summaryCat.total : 0;
+            const catCount = summaryCat ? (summaryCat.count || 0) : 0;
+            const isEmpty = catTotal === 0 && catCount === 0;
 
             return `
             <div class="accordion-item" style="margin-bottom:6px;cursor:pointer;${isEmpty ? 'opacity:0.5' : ''}" onclick="location.hash='category/${cat.id}'">
@@ -1081,22 +1067,13 @@ async function categorias() {
                         <span class="cat-name">${esc(cat.icon || '')} ${esc(cat.name)}</span>
                     </div>
                     <div class="accordion-right">
-                        <span class="badge-muted badge" style="margin-right:8px">${catExpenses.length}</span>
+                        <span class="badge-muted badge" style="margin-right:8px">${catCount}</span>
                         <span class="accordion-total mono">${fmt(catTotal)}</span>
                         <span class="accordion-chevron">${icons.chevronRight}</span>
                     </div>
                 </div>
             </div>`;
         }).join('');
-
-        const personFilterHtml = `
-            <div class="person-filter toggle-group">
-                <button class="toggle-btn ${catState.personFilter === 'all' ? 'active' : ''}" onclick="setCatPersonFilter('all')">All</button>
-                ${appState.users.map(u => {
-                    const short = u.name === 'Isabela' ? 'Bela' : u.name;
-                    return `<button class="toggle-btn ${catState.personFilter == u.id ? 'active' : ''}" onclick="setCatPersonFilter('${u.id}')">${esc(short)}</button>`;
-                }).join('')}
-            </div>`;
 
         document.getElementById('app').innerHTML = `
             <div class="view-enter">
@@ -1114,7 +1091,6 @@ async function categorias() {
                         <span class="month-label">${monthLabel}</span>
                         <button class="month-nav-btn" onclick="catNextMonth()">${icons.chevronRight}</button>
                     </div>
-                    ${personFilterHtml}
                 </div>
 
                 <div class="accordion">
