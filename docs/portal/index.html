@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Ops Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020617;
+      --surface: #0F172A;
+      --surface2: #1E293B;
+      --border: #334155;
+      --border-subtle: #1E293B;
+      --text: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --accent: #22C55E;
+      --accent-hover: #16A34A;
+      --accent-glow: rgba(34, 197, 94, 0.12);
+      --font-body: 'Fira Sans', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header {
+      width: 100%;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo svg { stroke: var(--accent); }
+
+    .logo-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .settings-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+
+    .settings-btn:hover {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 720px;
+      width: 100%;
+      padding: 48px 24px;
+    }
+
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 16px;
+    }
+
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 24px;
+      cursor: pointer;
+      transition: all 200ms ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .card.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+    }
+
+    .card-icon.finanz { background: rgba(34, 197, 94, 0.12); }
+    .card-icon.fitness { background: rgba(99, 102, 241, 0.12); }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .card-tag {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+
+    .card-tag.soon {
+      color: var(--text-muted);
+      background: rgba(100, 116, 139, 0.12);
+    }
+
+    /* Settings Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 420px;
+      max-width: 90vw;
+    }
+
+    .modal h2 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font-body);
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-dot.connected { background: var(--accent); }
+    .status-dot.disconnected { background: #EF4444; }
+
+    .status-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .header { padding: 16px; }
+      .container { padding: 24px 16px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <div>
+        <div class="logo-text">Home Ops</div>
+        <div class="logo-sub">Personal Portal</div>
+      </div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">Settings</button>
+  </div>
+
+  <div class="container">
+    <div class="section-label">Dashboards</div>
+    <div class="card-grid">
+      <a href="finanz/" class="card">
+        <div class="card-icon finanz">$</div>
+        <div class="card-title">FinanzOps</div>
+        <div class="card-desc">Household expense tracker. Grocery budgets, category breakdown, WhatsApp logging.</div>
+        <span class="card-tag">Active</span>
+      </a>
+      <div class="card disabled">
+        <div class="card-icon fitness">~</div>
+        <div class="card-title">FitBot</div>
+        <div class="card-desc">Fitness tracker. Meals, workouts, body metrics, macro targets.</div>
+        <span class="card-tag soon">Coming Soon</span>
+      </div>
+    </div>
+
+    <div id="connection-status"></div>
+  </div>
+
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <h2>Portal Settings</h2>
+      <div class="field">
+        <label>API Base URL</label>
+        <input type="text" id="api-base" placeholder="https://aarons-mac-mini.tail0dc185.ts.net">
+      </div>
+      <div class="field">
+        <label>API Token</label>
+        <input type="password" id="api-token" placeholder="Bearer token for gateway auth">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openSettings() {
+      document.getElementById('api-base').value = localStorage.getItem('portal_api_base') || '';
+      document.getElementById('api-token').value = localStorage.getItem('portal_api_token') || '';
+      document.getElementById('settings-modal').classList.add('open');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.remove('open');
+    }
+
+    function saveSettings() {
+      var base = document.getElementById('api-base').value.replace(/\/+$/, '').trim();
+      var token = document.getElementById('api-token').value.trim();
+      if (base) localStorage.setItem('portal_api_base', base);
+      else localStorage.removeItem('portal_api_base');
+      if (token) localStorage.setItem('portal_api_token', token);
+      else localStorage.removeItem('portal_api_token');
+      closeSettings();
+      checkConnection();
+    }
+
+    async function checkConnection() {
+      var el = document.getElementById('connection-status');
+      var base = localStorage.getItem('portal_api_base');
+      if (!base) {
+        el.innerHTML = '<div class="status-text"><span class="status-dot disconnected"></span>No API configured — click Settings to connect</div>';
+        return;
+      }
+      try {
+        var opts = {};
+        var token = localStorage.getItem('portal_api_token');
+        if (token) opts.headers = { 'Authorization': 'Bearer ' + token };
+        var res = await fetch(base + '/api/health', opts);
+        if (res.ok) {
+          el.innerHTML = '<div class="status-text"><span class="status-dot connected"></span>Connected to ' + base + '</div>';
+        } else {
+          el.innerHTML = '<div class="status-text"><span class="status-dot disconnected"></span>API returned ' + res.status + '</div>';
+        }
+      } catch (err) {
+        el.innerHTML = '<div class="status-text"><span class="status-dot disconnected"></span>Cannot reach ' + base + '</div>';
+      }
+    }
+
+    document.getElementById('settings-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeSettings();
+    });
+
+    checkConnection();
+  </script>
+</body>
+</html>
