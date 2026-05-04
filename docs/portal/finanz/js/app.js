@@ -407,7 +407,8 @@ async function loadCurrentUser() {
     try {
         const me = await api.me();
         if (!me.user) {
-            window.location.href = '/login.html';
+            // v3.1: relative path so it works under any base
+            window.location.href = 'login.html';
             return null;
         }
         appState.currentUser = me.user;
@@ -440,7 +441,7 @@ async function loadCurrentUser() {
 
 async function logoutUser() {
     try { await api.logout(); } catch {}
-    window.location.href = '/login.html';
+    window.location.href = 'login.html';
 }
 window.logoutUser = logoutUser;
 

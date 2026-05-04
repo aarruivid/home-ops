@@ -20,8 +20,10 @@ async function apiFetch(path, options = {}) {
 
     // Auto-redirect to login on auth failure
     if (res.status === 401) {
+        // v3.1: relative redirect so it works under any base path
+        // (localhost:5075/, github.io/home-ops/portal/finanz/, etc.)
         if (!window.location.pathname.endsWith('/login.html')) {
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
         }
         throw new Error('auth_required');
     }
