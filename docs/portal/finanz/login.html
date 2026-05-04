@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzOps · Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            var t = localStorage.getItem('portal_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --border: rgba(0,0,0,0.08);
+            --text: #0a0a0a;
+            --muted: #707070;
+            --accent: #18181b;
+            --aaron: #2563eb;
+            --bela: #db2777;
+            --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04);
+        }
+        [data-theme="dark"] {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --border: rgba(255,255,255,0.08);
+            --text: #fafafa;
+            --muted: #a1a1aa;
+            --accent: #fafafa;
+            --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: 15px;
+            margin-bottom: 48px;
+        }
+        .profiles {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .profile {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px 24px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .profile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 16px 40px rgba(0,0,0,0.08);
+        }
+        .profile.aaron:hover { border-color: var(--aaron); }
+        .profile.bela:hover { border-color: var(--bela); }
+        .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 600;
+            color: white;
+            letter-spacing: -0.02em;
+        }
+        .profile.aaron .avatar { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); }
+        .profile.bela .avatar { background: linear-gradient(135deg, #db2777 0%, #9d174d 100%); }
+        .name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .role {
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .footer {
+            margin-top: 48px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .footer a {
+            color: var(--muted);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--muted);
+        }
+        .error {
+            margin-top: 16px;
+            padding: 12px;
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        [data-theme="dark"] .error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FinanzOps</h1>
+        <p class="subtitle">Selecciona tu perfil para continuar</p>
+        <div class="profiles" id="profiles-container">
+            <!-- Populated by JS -->
+        </div>
+        <div class="error" id="error"></div>
+        <div class="footer">
+            <a href="../">← Portal</a>
+        </div>
+    </div>
+
+    <script>
+        const errorEl = document.getElementById('error');
+        const container = document.getElementById('profiles-container');
+
+        function getInitials(name) {
+            return name.charAt(0).toUpperCase();
+        }
+
+        function getProfileClass(name) {
+            const n = name.toLowerCase();
+            if (n.includes('aaron')) return 'aaron';
+            if (n.includes('bela') || n.includes('isabela')) return 'bela';
+            return '';
+        }
+
+        async function loadProfiles() {
+            try {
+                const res = await fetch('/api/auth/profiles');
+                if (!res.ok) throw new Error('No se pudieron cargar perfiles');
+                const data = await res.json();
+                container.innerHTML = data.profiles.map(p => `
+                    <div class="profile ${getProfileClass(p.name)}" data-id="${p.id}" data-name="${p.name}">
+                        <div class="avatar">${getInitials(p.name)}</div>
+                        <div class="name">${p.name}</div>
+                        <div class="role">${p.id === 1 ? 'Empresa + Personal' : 'Personal'}</div>
+                    </div>
+                `).join('');
+                container.querySelectorAll('.profile').forEach(el => {
+                    el.addEventListener('click', () => login(parseInt(el.dataset.id, 10)));
+                });
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function login(userId) {
+            errorEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ user_id: userId }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Login falló');
+                }
+                window.location.href = '/';
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        loadProfiles();
+    </script>
+</body>
+</html>

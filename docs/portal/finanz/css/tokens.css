@@ -1,0 +1,128 @@
+/* FinanzOps v3.1 — design tokens
+ * Restrained Stripe/Linear palette: monochrome + single blue accent.
+ * Per-user accents are subtle (indigo / pink) and reserved for identity, never decoration.
+ */
+
+:root {
+    /* Spacing — 8pt base */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+
+    /* Typography scale */
+    --text-xs:    11px;
+    --text-sm:    13px;
+    --text-base:  15px;
+    --text-md:    17px;
+    --text-lg:    22px;
+    --text-xl:    32px;
+    --text-2xl:   44px;
+
+    /* Radii */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+
+    /* Motion */
+    --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Light theme (default) — Stripe-Linear ink scale.
+     * NOTE: legacy styles.css already defines `--muted` as a TEXT color
+     * (#64748b, slate-500). We do NOT override it; we add `--surface-muted`
+     * for our background-tone needs to avoid shadowing legacy text rules.
+     */
+    --surface-muted:#F4F4F5;   /* zinc-100 — for chips, icon-circle bg */
+    --border-strong:#D4D4D8;   /* zinc-300 */
+    --text-muted:   #52525B;   /* zinc-600 — 7.4:1 on bg, AAA (additive token) */
+    --text-subtle:  #71717A;   /* zinc-500 — 4.6:1 on bg, AA (additive token) */
+
+    /* Single accent — used for primary action, links, active state, sparklines */
+    --accent:       #2563EB;   /* blue-600 */
+    --accent-hover: #1D4ED8;   /* blue-700 */
+    --accent-muted: #DBEAFE;   /* blue-100 */
+    --accent-soft:  #EFF6FF;   /* blue-50  */
+
+    /* Semantic — only for state, never for category differentiation */
+    --success:      #16A34A;   /* green-600 */
+    --success-soft: #DCFCE7;
+    --warning:      #CA8A04;   /* yellow-600 */
+    --warning-soft: #FEF9C3;
+    --danger:       #DC2626;   /* red-600 */
+    --danger-soft:  #FEE2E2;
+
+    /* Per-user identity accents (subtle, used only on chips/avatars) */
+    --user-aaron:        #4F46E5;  /* indigo-600 */
+    --user-aaron-soft:   #EEF2FF;  /* indigo-50  */
+    --user-bela:         #DB2777;  /* pink-600   */
+    --user-bela-soft:    #FDF2F8;  /* pink-50    */
+
+    /* Grayscale ramp for sparkline fades, heatmap intensity */
+    --intensity-0: #F4F4F5;
+    --intensity-1: #E4E4E7;
+    --intensity-2: #A1A1AA;
+    --intensity-3: #52525B;
+    --intensity-4: #18181B;
+}
+
+[data-theme="dark"] {
+    /* Dark theme — only redefine the NEW additive tokens. legacy styles.css
+     * already handles --bg/--surface/--text/--text-secondary/--muted/--border
+     * for [data-theme=dark]. */
+    --surface-muted:#27272A;   /* zinc-800 */
+    --border-strong:#3F3F46;   /* zinc-700 */
+    --text-muted:   #D4D4D8;   /* zinc-300 — 12.6:1 on dark bg */
+    --text-subtle:  #A1A1AA;   /* zinc-400 — 6.0:1 on dark bg, AA */
+
+    --accent:       #3B82F6;   /* blue-500 — slightly brighter for dark */
+    --accent-hover: #60A5FA;   /* blue-400 */
+    --accent-muted: #1E3A8A;
+    --accent-soft:  #172554;
+
+    --success:      #22C55E;
+    --success-soft: #14532D;
+    --warning:      #EAB308;
+    --warning-soft: #422006;
+    --danger:       #EF4444;
+    --danger-soft:  #450A0A;
+
+    --user-aaron-soft: #1E1B4B;
+    --user-bela-soft:  #500724;
+
+    --intensity-0: #18181B;
+    --intensity-1: #27272A;
+    --intensity-2: #52525B;
+    --intensity-3: #A1A1AA;
+    --intensity-4: #FAFAFA;
+}
+
+/* Tabular numerals on every numeric cell (financial dashboards 101) */
+.num,
+td.num,
+.metric-value,
+.amount,
+.tabular {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+}
+
+/* Reset stale per-user gradient backgrounds (legacy from v2 hogar/login) */
+:root[data-theme] .legacy-gradient-aaron,
+:root[data-theme] .legacy-gradient-bela {
+    background: var(--surface) !important;
+    background-image: none !important;
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
